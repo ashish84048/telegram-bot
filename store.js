@@ -4,12 +4,26 @@
  * ╚══════════════════════════════════════════════════════════╝
  */
 
+const mongoose = require("mongoose");
 const Product = require("./models/Product");
 const Order = require("./models/Order");
 const User = require("./models/User");
+const winston = require("winston");
 
-// ─── CATALOG SEED DATA ─────────────────────────────────────
-// Inserted once if the products collection is empty.
+// Configure Winston Logger for auditing
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
+});
+
+// Seed data remains the same
 const SEED_CATALOG = [
   {
     id: "MYNTRA_100",
@@ -33,32 +47,22 @@ const SEED_CATALOG = [
   },
 ];
 
-/**
- * Seed the product catalog if the collection is empty.
- * Called once on startup after DB connects.
- */
 async function initCatalog() {
   try {
     const count = await Product.countDocuments();
     if (count === 0) {
       await Product.insertMany(SEED_CATALOG);
-      console.log(`✅ Seeded ${SEED_CATALOG.length} products to MongoDB`);
+      logger.info(`✅ Seeded ${SEED_CATALOG.length} products to MongoDB`);
     }
   } catch (err) {
-    if (err.code === 11000) {
-      console.log(`✅ Catalog already seeded by another process.`);
-    } else {
-      console.error("[INIT CATALOG ERROR]", err.message);
+    if (err.code !== 11000) {
+      logger.error("[INIT CATALOG ERROR]", { message: err.message });
     }
   }
 }
 
 // ─── CATALOG / PRODUCT HELPERS ─────────────────────────────
 
-/**
- * Build catalog shape used by index.js (matches old store.catalog format)
- * { [category]: { label, products: [...] } }
- */
 async function getCatalog() {
   const products = await Product.find({ active: true }).lean();
   const catalog = {};
@@ -71,18 +75,12 @@ async function getCatalog() {
   return catalog;
 }
 
-/**
- * Get a single product by its string ID
- */
 async function getProduct(productId) {
   return Product.findOne({ id: productId, active: true }).lean();
 }
 
 // ─── USER HELPERS ──────────────────────────────────────────
 
-/**
- * Register or update a Telegram user
- */
 async function upsertUser(msg) {
   const chatId = String(msg.chat.id);
   const user = await User.findOneAndUpdate(
@@ -101,9 +99,6 @@ async function upsertUser(msg) {
 
 // ─── ORDER HELPERS ─────────────────────────────────────────
 
-/**
- * Create a new order
- */
 async function createOrder({ userId, productId, quantity = 1 }) {
   const product = await Product.findOne({ id: productId });
   if (!product) throw new Error("Product not found");
@@ -111,6 +106,7 @@ async function createOrder({ userId, productId, quantity = 1 }) {
   const orderId = `ORD-${Date.now()}-${userId}`;
   const totalPrice = product.price * quantity;
 
+  // includes default expiresAt from model
   const order = await Order.create({
     orderId,
     userId: String(userId),
@@ -119,12 +115,11 @@ async function createOrder({ userId, productId, quantity = 1 }) {
     totalPrice,
     status: "pending",
   });
+
+  logger.info(`Order Created: ${orderId}`, { userId, productId });
   return order.toObject();
 }
 
-/**
- * Check if user has a pending order for a product
- */
 async function hasPendingOrder(userId, productId) {
   return Order.exists({
     userId: String(userId),
@@ -133,25 +128,17 @@ async function hasPendingOrder(userId, productId) {
   });
 }
 
-/**
- * Get all orders for a user, newest first
- */
 async function getUserOrders(userId) {
   return Order.find({ userId: String(userId) })
     .sort({ createdAt: -1 })
     .lean();
 }
 
-/**
- * Mark order as failed
- */
 async function markOrderFailed(orderId) {
+  logger.warn(`Order Failed: ${orderId}`);
   return Order.updateOne({ orderId }, { $set: { status: "failed" } });
 }
 
-/**
- * Update order with UTR and set status to verification
- */
 async function updateOrderByUTR(orderId, utrNumber) {
   return Order.updateOne(
     { orderId },
@@ -159,58 +146,134 @@ async function updateOrderByUTR(orderId, utrNumber) {
   );
 }
 
-/**
- * Mark order as paid (before coupon delivery)
- */
 async function markOrderPaid(orderId) {
   return Order.updateOne({ orderId }, { $set: { status: "paid" } });
 }
 
 /**
- * Deliver multiple coupons — atomically pops codes from the product pool.
- * Returns { coupons, outOfStock }
+ * Refactored deliverCoupons using Sessions for Atomicity
  */
 async function deliverCoupons(orderId) {
-  const order = await Order.findOne({ orderId });
-  if (!order) return { coupons: [], outOfStock: true };
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  // If already delivered, just return the existing coupons
-  if (order.status === "delivered" && order.coupons && order.coupons.length > 0) {
-    return { coupons: order.coupons, outOfStock: false };
+  try {
+    const order = await Order.findOne({ orderId }).session(session);
+    if (!order) {
+      await session.abortTransaction();
+      return { coupons: [], outOfStock: true };
+    }
+
+    // Return if already delivered to prevent double-spending
+    if (order.status === "delivered" && order.coupons?.length > 0) {
+      await session.abortTransaction();
+      return { coupons: order.coupons, outOfStock: false };
+    }
+
+    const quantity = order.quantity || 1;
+    const product = await Product.findOne({ id: order.productId }).session(session);
+
+    if (!product || product.pool.length < quantity) {
+      await Order.updateOne({ orderId }, { $set: { status: "failed" } }).session(session);
+      await session.commitTransaction();
+      logger.error(`Stock mismatch for order ${orderId}`);
+      return { coupons: [], outOfStock: true };
+    }
+
+    const couponsToDeliver = product.pool.slice(0, quantity);
+
+    // Atomically pull from pool and increment sold count
+    await Product.updateOne(
+      { id: order.productId },
+      {
+        $pullAll: { pool: couponsToDeliver },
+        $inc: { sold: quantity }
+      }
+    ).session(session);
+
+    // Update order status and REMOVE expiresAt
+    await Order.updateOne(
+      { orderId },
+      {
+        $set: { coupons: couponsToDeliver, status: "delivered" },
+        $unset: { expiresAt: "" }
+      }
+    ).session(session);
+
+    await session.commitTransaction();
+    logger.info(`Coupons Delivered: ${orderId}`, { coupons: couponsToDeliver });
+    return { coupons: couponsToDeliver, outOfStock: false };
+
+  } catch (err) {
+    await session.abortTransaction();
+    logger.error(`Transaction failed for order ${orderId}`, { error: err.message });
+    throw err;
+  } finally {
+    session.endSession();
   }
+}
 
-  const quantity = order.quantity || 1;
-  const product = await Product.findOne({ id: order.productId });
+// ─── ADMIN HELPERS ─────────────────────────────────────────
 
-  if (!product || product.pool.length < quantity) {
-    await Order.updateOne({ orderId }, { $set: { status: "failed" } });
-    return { coupons: [], outOfStock: true };
-  }
+async function getAllProducts() {
+  return Product.find().lean();
+}
 
-  // Atomic delivery of multiple coupons
-  // We identify the coupons to deliver and pull them all at once
-  const couponsToDeliver = product.pool.slice(0, quantity);
+async function getAdminStats() {
+  const [totalOrders, totalUsers, products] = await Promise.all([
+    Order.countDocuments(),
+    User.countDocuments(),
+    Product.find().lean(),
+  ]);
 
-  const updated = await Product.findOneAndUpdate(
-    { id: order.productId, pool: { $all: couponsToDeliver } },
-    {
-      $pullAll: { pool: couponsToDeliver },
-      $inc: { sold: quantity }
-    },
-    { returnDocument: 'after' }
-  );
+  const deliveredOrders = await Order.find({ status: "delivered" }).lean();
+  const totalRevenuePaise = deliveredOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const totalStock = products.reduce((sum, p) => sum + p.pool.length, 0);
 
-  if (!updated) {
-    // This handles race conditions where pool changed between findOne and findOneAndUpdate
-    return { coupons: [], outOfStock: true };
-  }
+  return {
+    totalOrders,
+    totalUsers,
+    totalStock,
+    totalRevenue: totalRevenuePaise / 100,
+  };
+}
 
-  await Order.updateOne(
-    { orderId },
-    { $set: { coupons: couponsToDeliver, status: "delivered" } }
-  );
+async function updateProduct(productId, updates) {
+  logger.info(`Product Updated: ${productId}`, updates);
+  return Product.findOneAndUpdate({ id: productId }, { $set: updates }, { new: true }).lean();
+}
 
-  return { coupons: couponsToDeliver, outOfStock: false };
+async function addCouponsToPool(productId, coupons) {
+  logger.info(`Stock Added: ${productId}`, { count: coupons.length });
+  return Product.findOneAndUpdate(
+    { id: productId },
+    { $push: { pool: { $each: coupons } } },
+    { new: true }
+  ).lean();
+}
+
+async function getRecentOrders(limit = 10) {
+  return Order.find().sort({ createdAt: -1 }).limit(limit).lean();
+}
+
+async function createProduct(productData) {
+  logger.info(`New Product Created: ${productData.id}`);
+  return Product.create(productData);
+}
+
+async function deleteCoupon(productId, coupon) {
+  return Product.findOneAndUpdate(
+    { id: productId },
+    { $pull: { pool: coupon } },
+    { new: true }
+  ).lean();
+}
+
+async function getLowStockProducts(threshold = 5) {
+  return Product.find({
+    active: true,
+    $expr: { $lt: [{ $size: "$pool" }, threshold] }
+  }).lean();
 }
 
 module.exports = {
@@ -225,7 +288,6 @@ module.exports = {
   markOrderFailed,
   updateOrderByUTR,
   deliverCoupons,
-  // ADMIN HELPERS
   getAllProducts,
   getAdminStats,
   updateProduct,
@@ -235,87 +297,3 @@ module.exports = {
   deleteCoupon,
   getLowStockProducts,
 };
-
-/**
- * Get all products (including inactive)
- */
-async function getAllProducts() {
-  return Product.find().lean();
-}
-
-/**
- * Get administrative statistics
- */
-async function getAdminStats() {
-  const [totalOrders, totalUsers, products] = await Promise.all([
-    Order.countDocuments(),
-    User.countDocuments(),
-    Product.find().lean(),
-  ]);
-
-  const deliveredOrders = await Order.find({ status: "delivered" }).lean();
-
-  // Revenue = sum of order.totalPrice for all delivered orders
-  const totalRevenuePaise = deliveredOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-
-  const totalStock = products.reduce((sum, p) => sum + p.pool.length, 0);
-
-  return {
-    totalOrders,
-    totalUsers,
-    totalStock,
-    totalRevenue: totalRevenuePaise / 100,
-  };
-}
-
-/**
- * Update product fields
- */
-async function updateProduct(productId, updates) {
-  return Product.findOneAndUpdate({ id: productId }, { $set: updates }, { new: true }).lean();
-}
-
-/**
- * Bulk add coupons
- */
-async function addCouponsToPool(productId, coupons) {
-  return Product.findOneAndUpdate(
-    { id: productId },
-    { $push: { pool: { $each: coupons } } },
-    { new: true }
-  ).lean();
-}
-
-/**
- * Get recent orders
- */
-async function getRecentOrders(limit = 10) {
-  return Order.find().sort({ createdAt: -1 }).limit(limit).lean();
-}
-
-/**
- * Create a new product
- */
-async function createProduct(productData) {
-  return Product.create(productData);
-}
-/**
- * Delete a single coupon from pool
- */
-async function deleteCoupon(productId, coupon) {
-  return Product.findOneAndUpdate(
-    { id: productId },
-    { $pull: { pool: coupon } },
-    { new: true }
-  ).lean();
-}
-
-/**
- * Get products with low stock (< threshold)
- */
-async function getLowStockProducts(threshold = 5) {
-  return Product.find({
-    active: true,
-    $expr: { $lt: [{ $size: "$pool" }, threshold] }
-  }).lean();
-}
