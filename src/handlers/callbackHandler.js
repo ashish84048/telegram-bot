@@ -17,7 +17,7 @@ async function handleCallback(bot, query, store, utils, components) {
   // Compatibility for old messages from the multi-coupon version
   if (data.startsWith("QTY_SELECT:") || data.startsWith("QTY_CUSTOM:")) {
     const productId = data.split(":")[1];
-    return utils.safeExec(bot, chatId, () => 
+    return utils.safeExec(bot, chatId, () =>
       components.payments.handleBuyProduct(bot, chatId, productId, store, utils.formatPrice)
     );
   }
@@ -32,7 +32,7 @@ async function handleCallback(bot, query, store, utils, components) {
 
   if (data.startsWith("BUY:")) {
     const productId = data.split(":")[1];
-    return utils.safeExec(bot, chatId, () => 
+    return utils.safeExec(bot, chatId, () =>
       components.payments.handleBuyProduct(bot, chatId, productId, store, utils.formatPrice)
     );
   }
@@ -47,6 +47,40 @@ async function handleCallback(bot, query, store, utils, components) {
     const orderId = data.split(":")[1];
     userStates[chatId] = { step: "WAITING_UTR", orderId };
     return bot.sendMessage(chatId, "⌨️ *Please enter your 12-digit UTR number:*", { parse_mode: "Markdown" });
+  }
+
+
+  // --- ADDED CANCEL HANDLER HERE ---
+  if (data.startsWith("CANCEL:")) {
+    const orderId = data.split(":")[1];
+
+    return utils.safeExec(bot, chatId, async () => {
+      // 1. Mark the order as failed in the database
+      await store.markOrderFailed(orderId);
+
+      // 2. Clear any waiting state for this user
+      if (userStates[chatId] && userStates[chatId].orderId === orderId) {
+        delete userStates[chatId];
+      }
+
+      // 3. Delete the QR Code message so the user's chat stays clean
+      try {
+        await bot.deleteMessage(chatId, messageId);
+      } catch (err) {
+        // Fallback: If deleting fails, at least remove the buttons
+        await bot.editMessageReplyMarkup(
+          { inline_keyboard: [] },
+          { chat_id: chatId, message_id: messageId }
+        );
+      }
+
+      // 4. Send a fresh confirmation message
+      await bot.sendMessage(
+        chatId,
+        `❌ *Order Cancelled*\n\nYour order \`${orderId}\` has been successfully cancelled.\n\nTap 🛒 *Browse Coupons* to start over.`,
+        { parse_mode: "Markdown" }
+      );
+    });
   }
 
   if (data.startsWith("APPROVE:")) {
@@ -85,7 +119,7 @@ async function handleCallback(bot, query, store, utils, components) {
   }
 
   // --- ADMIN MANAGEMENT HANDLERS ---
-  
+
   if (data.startsWith("ADMIN_")) {
     // Handle admin flow states
     if (data.startsWith("ADMIN_ADD_STOCK:")) {
