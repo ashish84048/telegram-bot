@@ -37,42 +37,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // HELPERS
 // ─────────────────────────────────────────────────────────
 
-function verifyRazorpaySignature(req) {
-  const secret = process.env.WEBHOOK_SECRET;
-  const received = req.headers["x-razorpay-signature"];
-  
-  // Allow skipping for local testing if explicitly configured
-  if (secret === "SKIP_SIGNATURE") {
-    console.log("[WEBHOOK] ℹ️ Skipping signature check (DEBUG MODE)");
-    return true;
-  }
-  
-  if (!received || !secret) {
-    console.warn(`[WEBHOOK] ❌ Missing signature or secret (Received: ${!!received}, Secret: ${!!secret})`);
-    return false;
-  }
-  
-  if (!req.rawBody) {
-    console.error("[WEBHOOK] ❌ rawBody is missing! Webhook signature will fail.");
-    return false;
-  }
-  
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(req.rawBody)
-    .digest("hex");
-    
-  const match = crypto.timingSafeEqual(
-    Buffer.from(received, "hex"),
-    Buffer.from(expected, "hex")
-  );
-
-  if (!match) {
-    console.warn(`[WEBHOOK] ❌ Signature mismatch. Expected ${expected.slice(0, 10)}..., Got ${received.slice(0, 10)}...`);
-  }
-
-  return match;
-}
+// Signature verification removed as Razorpay is replaced by manual verification.
 
 // ─── MANUAL TEST ROUTE ──────────────────────────────
 // Use this to manually trigger delivery if webhooks are failing to reach you locally.
@@ -86,19 +51,16 @@ app.get("/api/test-deliver/:orderId", requireAuth, async (req, res) => {
     if (!order) return res.status(404).json({ error: "Order not found" });
 
     await store.markOrderPaid(orderId);
-    const result = await store.deliverCoupon(orderId);
+    const result = await store.deliverCoupons(orderId);
     
     if (result.outOfStock) {
       return res.json({ status: "out_of_stock", message: "Delivery logic worked but product is out of stock" });
     }
     
-    // Attempt to send message to user
-    const product = await store.getProduct(order.productId);
-    const productName = product ? product.name : order.productId;
-    
-    await bot.sendMessage(order.userId, `🎁 *Manual Delivery (Test)*\n\nYour Coupon: \`${result.coupon}\``, { parse_mode: "Markdown" });
+    const couponsText = result.coupons.map(c => `\`${c}\``).join(", ");
+    await bot.sendMessage(order.userId, `🎁 *Manual Delivery (Test)*\n\nYour Coupon(s): ${couponsText}`, { parse_mode: "Markdown" });
 
-    res.json({ status: "success", coupon: result.coupon, message: "Manual delivery success!" });
+    res.json({ status: "success", coupons: result.coupons, message: "Manual delivery success!" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -270,7 +232,7 @@ app.post("/api/products/:id/coupons", requireAuth, async (req, res) => {
     const product = await Product.findOneAndUpdate(
       { id },
       { $push: { pool: { $each: trimmed } } },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
 
     if (!product) return res.status(404).json({ error: `Product '${id}' not found` });
@@ -298,7 +260,7 @@ app.delete("/api/products/:id/coupons", requireAuth, async (req, res) => {
     const product = await Product.findOneAndUpdate(
       { id },
       { $pullAll: { pool: coupons } },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
 
     if (!product) return res.status(404).json({ error: `Product '${id}' not found` });
@@ -317,7 +279,7 @@ app.patch("/api/products/:id", requireAuth, async (req, res) => {
     if (req.body.name) updates.name = req.body.name;
     if (req.body.price) updates.price = Number(req.body.price);
 
-    const product = await Product.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+    const product = await Product.findOneAndUpdate({ id }, { $set: updates }, { returnDocument: 'after' }).lean();
     if (!product) return res.status(404).json({ error: `Product '${id}' not found` });
     res.json({ ...product, stock: product.pool.length });
   } catch (err) {
@@ -357,8 +319,8 @@ app.post("/api/orders/:orderId/deliver", requireAuth, async (req, res) => {
     // First, mark as paid if it's still pending
     await store.markOrderPaid(orderId);
     
-    // Deliver coupon
-    const result = await store.deliverCoupon(orderId);
+    // Deliver coupons
+    const result = await store.deliverCoupons(orderId);
     
     if (result.outOfStock) {
       return res.status(400).json({ error: "Product is out of stock. Cannot deliver." });
@@ -366,22 +328,23 @@ app.post("/api/orders/:orderId/deliver", requireAuth, async (req, res) => {
     
     // Find order to get userId and productId
     const order = await Order.findOne({ orderId }).lean();
-    if (order && order.coupon) {
+    if (order && order.coupons && order.coupons.length > 0) {
       const product = await store.getProduct(order.productId);
       const productName = product ? product.name : order.productId;
+      const couponsText = order.coupons.map(c => `\`${c}\``).join("\n");
       
-      // Send code to user via bot
+      // Send codes to user via bot
       await bot.sendMessage(
         order.userId,
         `🎁 *Payment Confirmed (Manual)*\n\n` +
-        `Your coupon for *${productName}* is ready:\n\n` +
-        `\`${order.coupon}\`\n\n` +
+        `Your coupons for *${productName}* are ready:\n\n` +
+        `${couponsText}\n\n` +
         `Order ID: \`${orderId}\``,
         { parse_mode: "Markdown" }
       ).catch(e => console.error("[BOT] Failed to send manual delivery message:", e.message));
     }
     
-    res.json({ success: true, coupon: result.coupon });
+    res.json({ success: true, coupons: result.coupons });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -405,121 +368,7 @@ app.get("/api/users", requireAuth, async (req, res) => {
 // RAZORPAY WEBHOOK
 // ─────────────────────────────────────────────────────────
 
-app.post("/webhook", async (req, res) => {
-  console.log(`\n[WEBHOOK] 📥 Incoming Request: ${req.method} ${req.url}`);
-  console.log(`[WEBHOOK] Headers: ${JSON.stringify(req.headers, null, 2)}`);
-  
-  if (!verifyRazorpaySignature(req)) {
-    console.warn("[WEBHOOK] ❌ Invalid signature — request rejected");
-    return res.status(400).json({ error: "Invalid signature" });
-  }
-
-  const event = req.body.event;
-  console.log(`[WEBHOOK] ✅ Valid Event: ${event}`);
-  console.log(`[WEBHOOK] Payload Sample: ${JSON.stringify(req.body).slice(0, 200)}...`);
-
-  // ── payment_link.paid ──────────────────────────────────
-  if (event === "payment_link.paid") {
-    try {
-      const entity = req.body.payload.payment_link.entity;
-      const notes = entity.notes || {};
-
-      const telegramId = String(notes.telegramId);
-      const productId = notes.productId;
-      const paymentLinkId = entity.id;
-
-      console.log(`[WEBHOOK] Payment success — user: ${telegramId}, product: ${productId}`);
-
-      const order = await store.findOrderByPaymentLinkId(paymentLinkId);
-
-      if (!order) {
-        console.warn(`[WEBHOOK] Order not found for paymentLinkId: ${paymentLinkId}`);
-        await alertAdmin(
-          `⚠️ Payment received but no matching order found!\n` +
-            `Payment Link ID: \`${paymentLinkId}\`\n` +
-            `Telegram ID: \`${telegramId}\`\n` +
-            `Product ID: \`${productId}\``
-        );
-        return res.json({ status: "ok" });
-      }
-
-      await store.markOrderPaid(order.orderId);
-      const { coupon, outOfStock } = await store.deliverCoupon(order.orderId);
-
-      if (outOfStock) {
-        console.error(`[WEBHOOK] 🚨 Out of stock for product: ${productId}`);
-        await bot.sendMessage(
-          telegramId,
-          `✅ *Payment Received!* Thank you for your purchase.\n\n` +
-            `😔 Unfortunately, this coupon is *temporarily out of stock*.\n\n` +
-            `Our team has been notified and will send your coupon *within 30 minutes* or issue a *full refund*.\n\n` +
-            `📋 Order ID: \`${order.orderId}\`\n` +
-            `Touch us at @GoLuOffersSupport if you need immediate help.`,
-          { parse_mode: "Markdown" }
-        );
-
-        const product = await store.getProduct(productId);
-        await alertAdmin(
-          `🚨 *STOCK DEPLETED*\n\n` +
-            `Product: *${product ? product.name : productId}*\n` +
-            `Buyer Telegram ID: \`${telegramId}\`\n` +
-            `Order ID: \`${order.orderId}\`\n\n` +
-            `⚠️ Manual delivery or refund required!`
-        );
-      } else {
-        const product = await store.getProduct(productId);
-        const productName = product ? product.name : productId;
-
-        await bot.sendMessage(
-          telegramId,
-          `🎉 *Payment Confirmed!*\n\n` +
-            `Thank you for shopping at *🏪 Golu Offers*!\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `${product ? product.emoji : "🎁"} *${productName}*\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-            `🎁 *Your Coupon Code:*\n` +
-            `\`${coupon}\`\n\n` +
-            `📋 Order ID: \`${order.orderId}\`\n\n` +
-            `✨ *How to use:*\n` +
-            `Copy the code above and paste it at checkout.\n\n` +
-            `💖 Thank you for trusting *Golu Offers*!\n` +
-            `Share us with friends and save more! 🚀`,
-          { parse_mode: "Markdown" }
-        );
-
-        console.log(`[WEBHOOK] ✅ Coupon delivered: ${coupon} → user: ${telegramId}`);
-      }
-    } catch (err) {
-      console.error("[WEBHOOK] Error processing payment_link.paid:", err);
-      await alertAdmin(`❌ Error processing payment event:\n\`${err.message}\``);
-    }
-  }
-
-  // ── payment.failed ─────────────────────────────────────
-  if (event === "payment.failed") {
-    try {
-      const payment = req.body.payload.payment.entity;
-      const notes = payment.notes || {};
-      const telegramId = notes.telegramId;
-
-      if (telegramId) {
-        await bot.sendMessage(
-          String(telegramId),
-          `❌ *Payment Failed*\n\n` +
-            `Unfortunately your payment could not be processed.\n\n` +
-            `Reason: _${payment.error_description || "Unknown error"}_\n\n` +
-            `You can try again by pressing 🛒 *Browse Coupons*.\n` +
-            `Need help? Contact @GoLuOffersSupport`,
-          { parse_mode: "Markdown" }
-        );
-      }
-    } catch (err) {
-      console.error("[WEBHOOK] Error processing payment.failed:", err);
-    }
-  }
-
-  res.json({ status: "ok" });
-});
+// Razorpay Webhook removed. Manual verification is now handled via the bot.
 
 // ─────────────────────────────────────────────────────────
 // 404 CATCH-ALL
