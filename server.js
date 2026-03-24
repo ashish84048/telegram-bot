@@ -127,16 +127,38 @@ function requireAuth(req, res, next) {
 }
 
 // ─────────────────────────────────────────────────────────
-// HEALTH CHECK
+// HEALTH CHECK & HEARTBEAT
 // ─────────────────────────────────────────────────────────
 
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     service: "Golu Offers Webhook + Dashboard",
+    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
 });
+
+/**
+ * Automatically ping the health endpoint every 12 seconds
+ * to keep the service warm and monitor connectivity.
+ */
+function startHeartbeat() {
+  const protocol = (process.env.RENDER_EXTERNAL_URL || "").startsWith("https") ? require("https") : require("http");
+  const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}/health`;
+
+  console.log(`💓 Heartbeat started: Pinging ${url} every 12s`);
+  
+  setInterval(() => {
+    protocol.get(url, (res) => {
+      // console.log(`[HEARTBEAT] Pinged ${url} - Status: ${res.statusCode}`);
+    }).on("error", (err) => {
+      if (!err.message.includes("ECONNREFUSED")) {
+        console.error(`[HEARTBEAT] Ping failed: ${err.message}`);
+      }
+    });
+  }, 12000);
+}
 
 // ─────────────────────────────────────────────────────────
 // DASHBOARD API ROUTES
@@ -520,5 +542,7 @@ app.use((_req, res) => {
     console.log(`║  🏪 Golu Offers Webhook LIVE 🚀  ║`);
     console.log(`║  Dashboard: localhost:${PORT}/dashboard ║`);
     console.log(`╚══════════════════════════════════╝\n`);
+    
+    startHeartbeat(); // Start self-pinging every 12s
   });
 })();
