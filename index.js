@@ -98,7 +98,7 @@ bot.on("message", async (msg) => {
   try {
     if (!msg.text || msg.text.startsWith("/")) return; // Handled by onText
     if (!checkMaintenance(msg.chat.id)) return;
-    
+
     await messageHandler.handleMessage(bot, msg, store, utils, components);
   } catch (err) {
     console.error("[MESSAGE ERROR]", err.message || err);
@@ -150,7 +150,7 @@ app.get("/health", (req, res) => {
 function startHeartbeat() {
   const externalUrl = process.env.RENDER_EXTERNAL_URL;
   const serviceName = process.env.RENDER_SERVICE_NAME;
-  
+
   // Determine URL to ping
   let urlToPing;
   if (externalUrl) {
@@ -181,7 +181,7 @@ function startHeartbeat() {
     }).on("error", (err) => {
       console.error(`[HEARTBEAT] ❌ Ping failed: ${err.message}`);
     });
-  }, 240000);
+  }, 780000);
 }
 
 // ─────────────────────────────────────────────────────────
