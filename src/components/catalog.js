@@ -57,14 +57,15 @@ async function sendProductList(bot, chatId, categoryKey, store, formatPrice, edi
           : `✅ ${available} in stock`;
 
     lines.push(
-      `${product.emoji} *${escapeMarkdown(product.name)}*\n` +
-      `   ${escapeMarkdown(product.description || '')}\n` +
-      `   💰 Price: *${formatPrice(product.price)}*   ${stockLabel}\n`
+      `${product.emoji} *${escapeMarkdown(product.description || '')}*\n` +
+      `   💰 Price: ${formatPrice(product.price)}   ${stockLabel}\n\n`
     );
 
     buttons.push([
       {
-        text: available === 0 ? "❌ Sold Out" : `🛒 Buy — ${formatPrice(product.price)}`,
+        text: available === 0
+          ? "❌ Sold Out"
+          : `🛍️ Buy ${product.name}`,
         callback_data: available === 0 ? "NOOP" : `BUY:${product.id}`,
       },
     ]);

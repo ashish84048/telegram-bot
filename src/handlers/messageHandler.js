@@ -21,9 +21,9 @@ async function handleMessage(bot, msg, store, utils, components) {
     }
 
     // Check for duplicate UTR
-    const duplicateUtr = await Order.exists({ 
-      utrNumber: utr, 
-      status: { $in: ["verification", "paid", "delivered"] } 
+    const duplicateUtr = await Order.exists({
+      utrNumber: utr,
+      status: { $in: ["verification", "paid", "delivered"] }
     });
 
     if (duplicateUtr) {
@@ -85,7 +85,7 @@ async function handleMessage(bot, msg, store, utils, components) {
     if (step === "ADMIN_WAITING_STOCK") {
       const coupons = text.split("\n").map(s => s.trim()).filter(Boolean);
       if (coupons.length === 0) return bot.sendMessage(chatId, "❌ No valid coupons found. Please try again.");
-      
+
       await store.addCouponsToPool(productId, coupons);
       delete userStates[chatId];
       await bot.sendMessage(chatId, `✅ Successfully added *${coupons.length}* coupons to \`${productId}\`.`, { parse_mode: "Markdown" });
@@ -95,7 +95,7 @@ async function handleMessage(bot, msg, store, utils, components) {
     if (step === "ADMIN_WAITING_PRICE") {
       const price = parseFloat(text);
       if (isNaN(price) || price <= 0) return bot.sendMessage(chatId, "❌ Invalid price. Please enter a number.");
-      
+
       await store.updateProduct(productId, { price: Math.round(price * 100) });
       delete userStates[chatId];
       await bot.sendMessage(chatId, `✅ Price updated to *₹${price}* for \`${productId}\`.`, { parse_mode: "Markdown" });
@@ -145,7 +145,7 @@ async function handleMessage(bot, msg, store, utils, components) {
     if (step === "ADMIN_WAITING_PROD_PRICE") {
       const priceVal = parseFloat(text);
       if (isNaN(priceVal)) return bot.sendMessage(chatId, "❌ Invalid price. Enter a number.");
-      
+
       state.newProd.price = Math.round(priceVal * 100);
       const newProd = state.newProd;
       delete userStates[chatId];
@@ -190,13 +190,15 @@ async function sendSupport(bot, chatId, mainMenuKeyboard) {
   const supportText =
     `💬 *Contact & Support*\n\n` +
     `Have a question or issue? We're here to help!\n\n` +
+    `📝 Message us with your Order ID\n` +
     `👤 Support: ${config.SUPPORT_USERNAME}\n` +
     `⏰ Response time: Usually within 1-2 hours\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `*Common Issues:*\n` +
-    `• Payment done but no coupon? → Message us with your Order ID\n` +
-    `• Coupon not working? → We'll replace it free!\n` +
-    `• Wrong product? → Let us know within 24 hours`;
+
+    `📜 *Terms & Conditions*\n\n` +
+    `1. Only one coupon code can be purchased at a time.\n` +
+    `2. If payment is made for more than one code in a single transaction, no guarantee will be provided.\n` +
+    `3. No replacement will be given, as all coupon codes are already verified and checked.\n` +
+    `4. If the coupon fails for any reason, please contact on Telegram: ${config.SUPPORT_USERNAME}`;
 
   await bot.sendMessage(chatId, supportText, {
     parse_mode: "Markdown",

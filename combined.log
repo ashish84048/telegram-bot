@@ -6,3 +6,136 @@
 {"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-25T08:27:38.202Z"}
 {"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-25T08:27:38.202Z"}
 {"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-25T08:27:38.203Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:11:57.262Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:11:57.266Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:11:57.266Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:11:57.266Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:25:27.909Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:25:27.911Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:25:27.911Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:25:27.912Z"}
+{"level":"info","message":"Order Created: ORD-1774610816248-8406086019","productId":"MYNTRA_100","timestamp":"2026-03-27T11:26:56.322Z","userId":8406086019}
+{"level":"warn","message":"Order Failed: ORD-1774610816248-8406086019","timestamp":"2026-03-27T11:27:24.374Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:28:40.133Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:28:40.135Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:28:40.135Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:28:40.136Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:29:35.431Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:29:35.433Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:29:35.433Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:29:35.434Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:36:20.724Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:36:20.727Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:36:20.727Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:36:20.727Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:36:55.574Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:36:55.577Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:36:55.577Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:36:55.577Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:37:12.445Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:37:12.448Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:37:12.448Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:37:12.448Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:39:19.666Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:39:19.668Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:39:19.669Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:39:19.669Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:41:10.813Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:41:10.815Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:41:10.815Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:41:10.815Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:42:48.522Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:42:48.524Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:42:48.524Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:42:48.525Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:47:08.909Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:47:08.912Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:47:08.912Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:47:08.912Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:51:10.956Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:51:10.958Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:51:10.958Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:51:10.959Z"}
+{"level":"info","message":"Order Created: ORD-1774612321575-8406086019","productId":"MYNTRA_100","timestamp":"2026-03-27T11:52:01.643Z","userId":8406086019}
+{"level":"info","message":"Order Created: ORD-1774612371157-7222166455","productId":"MYNTRA_100","timestamp":"2026-03-27T11:52:51.220Z","userId":7222166455}
+{"level":"warn","message":"Order Failed: ORD-1774612371157-7222166455","timestamp":"2026-03-27T11:53:01.948Z"}
+{"level":"info","message":"Order Created: ORD-1774612384938-7222166455","productId":"MYNTRA_150","timestamp":"2026-03-27T11:53:05.067Z","userId":7222166455}
+{"level":"warn","message":"Order Failed: ORD-1774612384938-7222166455","timestamp":"2026-03-27T11:53:12.603Z"}
+{"level":"info","message":"Order Created: ORD-1774612566629-1965901101","productId":"MYNTRA_100","timestamp":"2026-03-27T11:56:06.711Z","userId":1965901101}
+{"level":"info","message":"Order Created: ORD-1774612589441-7222166455","productId":"MYNTRA_150","timestamp":"2026-03-27T11:56:29.497Z","userId":7222166455}
+{"level":"warn","message":"Order Failed: ORD-1774612321575-8406086019","timestamp":"2026-03-27T11:57:03.128Z"}
+{"level":"info","message":"Order Created: ORD-1774612632045-8406086019","productId":"MYNTRA_100","timestamp":"2026-03-27T11:57:12.101Z","userId":8406086019}
+{"level":"warn","message":"Order Failed: ORD-1774612632045-8406086019","timestamp":"2026-03-27T11:57:14.764Z"}
+{"level":"info","message":"Order Created: ORD-1774612762981-1965901101","productId":"MYNTRA_100","timestamp":"2026-03-27T11:59:23.041Z","userId":1965901101}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T11:59:37.937Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T11:59:37.940Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T11:59:37.940Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T11:59:37.940Z"}
+{"level":"info","message":"Order Created: ORD-1774612809290-1965901101","productId":"MYNTRA_100","timestamp":"2026-03-27T12:00:09.395Z","userId":1965901101}
+{"level":"info","message":"Order Created: ORD-1774612822420-8406086019","productId":"MYNTRA_100","timestamp":"2026-03-27T12:00:22.480Z","userId":8406086019}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T12:03:00.597Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T12:03:00.599Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T12:03:00.599Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T12:03:00.599Z"}
+{"level":"warn","message":"Order Failed: ORD-1774612822420-8406086019","timestamp":"2026-03-27T12:03:00.699Z"}
+{"level":"info","message":"Order Created: ORD-1774613003667-8406086019","productId":"MYNTRA_100","timestamp":"2026-03-27T12:03:23.749Z","userId":8406086019}
+{"level":"info","message":"Order Created: ORD-1774613007819-7222166455","productId":"MYNTRA_100","timestamp":"2026-03-27T12:03:27.878Z","userId":7222166455}
+{"level":"warn","message":"Order Failed: ORD-1774613007819-7222166455","timestamp":"2026-03-27T12:03:31.151Z"}
+{"level":"info","message":"Order Created: ORD-1774613014292-7222166455","productId":"MYNTRA_150","timestamp":"2026-03-27T12:03:34.363Z","userId":7222166455}
+{"level":"info","message":"Order Created: ORD-1774613022257-1965901101","productId":"MYNTRA_100","timestamp":"2026-03-27T12:03:42.319Z","userId":1965901101}
+{"level":"warn","message":"Order Failed: ORD-1774613003667-8406086019","timestamp":"2026-03-27T12:04:05.936Z"}
+{"level":"warn","message":"Order Failed: ORD-1774613003667-8406086019","timestamp":"2026-03-27T12:04:44.469Z"}
+{"level":"warn","message":"Order Failed: ORD-1774613014292-7222166455","timestamp":"2026-03-27T12:04:49.147Z"}
+{"level":"warn","message":"Order Failed: ORD-1774613022257-1965901101","timestamp":"2026-03-27T12:04:53.062Z"}
+{"level":"info","message":"Order Created: ORD-1774613343534-7222166455","productId":"MYNTRA_100","timestamp":"2026-03-27T12:09:03.625Z","userId":7222166455}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T12:09:15.017Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T12:09:15.019Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T12:09:15.019Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T12:09:15.019Z"}
+{"level":"info","message":"Order Created: ORD-1774613367235-7222166455","productId":"MYNTRA_150","timestamp":"2026-03-27T12:09:27.305Z","userId":7222166455}
+{"level":"warn","message":"Order Failed: ORD-1774613367235-7222166455","timestamp":"2026-03-27T12:09:29.536Z"}
+{"level":"info","message":"Order Created: ORD-1774613456318-2071459610","productId":"MYNTRA_100","timestamp":"2026-03-27T12:10:56.399Z","userId":2071459610}
+{"coupons":["9972"],"level":"info","message":"Coupons Delivered: ORD-1774613456318-2071459610","timestamp":"2026-03-27T12:11:47.370Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T12:16:02.137Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T12:16:02.145Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T12:16:02.145Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T12:16:02.146Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T12:18:37.985Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T12:18:37.987Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T12:18:37.987Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T12:18:37.987Z"}
+{"level":"info","message":"Order Created: ORD-1774613918868-2071459610","productId":"MYNTRA_100","timestamp":"2026-03-27T12:18:38.968Z","userId":2071459610}
+{"level":"info","message":"Order Created: ORD-1774613918965-2071459610","productId":"MYNTRA_100","timestamp":"2026-03-27T12:18:39.064Z","userId":2071459610}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T12:19:13.043Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T12:19:13.046Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T12:19:13.046Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T12:19:13.046Z"}
+{"level":"warn","message":"Order Failed: ORD-1774613918965-2071459610","timestamp":"2026-03-27T12:19:21.502Z"}
+{"level":"warn","message":"Order Failed: ORD-1774613918868-2071459610","timestamp":"2026-03-27T12:19:25.979Z"}
+{"level":"info","message":"Order Created: ORD-1774613970481-2071459610","productId":"MYNTRA_100","timestamp":"2026-03-27T12:19:30.551Z","userId":2071459610}
+{"coupons":["6252"],"level":"info","message":"Coupons Delivered: ORD-1774613970481-2071459610","timestamp":"2026-03-27T12:19:52.994Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T12:23:44.151Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T12:23:44.153Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T12:23:44.153Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T12:23:44.154Z"}
+{"level":"info","message":"╔══════════════════════════════════╗","timestamp":"2026-03-27T12:24:36.332Z"}
+{"level":"info","message":"║  Express Server LIVE on port 3000 ║","timestamp":"2026-03-27T12:24:36.334Z"}
+{"level":"info","message":"╚══════════════════════════════════╝","timestamp":"2026-03-27T12:24:36.334Z"}
+{"level":"info","message":"💓 Heartbeat started: Pinging http://localhost:3000/health every 12s","timestamp":"2026-03-27T12:24:36.335Z"}
+{"level":"info","message":"Order Created: ORD-1774614302838-2071459610","productId":"MYNTRA_150","timestamp":"2026-03-27T12:25:02.909Z","userId":2071459610}
+{"coupons":["MYN200DEAL1"],"level":"info","message":"Coupons Delivered: ORD-1774614302838-2071459610","timestamp":"2026-03-27T12:25:27.414Z"}
+{"count":2,"level":"info","message":"Stock Added: MYNTRA_100","timestamp":"2026-03-27T12:27:02.559Z"}
+{"count":1,"level":"info","message":"Stock Added: MYNTRA_150","timestamp":"2026-03-27T12:28:07.331Z"}
+{"level":"info","message":"Order Created: ORD-1774614501602-1965901101","productId":"MYNTRA_100","timestamp":"2026-03-27T12:28:21.681Z","userId":1965901101}
+{"level":"info","message":"Order Created: ORD-1774614502045-2071459610","productId":"MYNTRA_150","timestamp":"2026-03-27T12:28:22.097Z","userId":2071459610}
+{"level":"warn","message":"Order Failed: ORD-1774614502045-2071459610","timestamp":"2026-03-27T12:28:24.891Z"}
+{"level":"warn","message":"Order Failed: ORD-1774614501602-1965901101","timestamp":"2026-03-27T12:28:27.807Z"}
+{"level":"info","message":"Order Created: ORD-1774614511947-2071459610","productId":"MYNTRA_150","timestamp":"2026-03-27T12:28:31.998Z","userId":2071459610}
+{"level":"info","message":"Order Created: ORD-1774614514314-1965901101","productId":"MYNTRA_100","timestamp":"2026-03-27T12:28:34.361Z","userId":1965901101}
+{"level":"warn","message":"Order Failed: ORD-1774614514314-1965901101","timestamp":"2026-03-27T12:28:38.034Z"}
+{"level":"info","message":"Order Created: ORD-1774614775888-7222166455","productId":"MYNTRA_100","timestamp":"2026-03-27T12:32:55.932Z","userId":7222166455}
+{"level":"warn","message":"Order Failed: ORD-1774614775888-7222166455","timestamp":"2026-03-27T12:33:01.849Z"}
+{"level":"info","message":"Order Created: ORD-1774614789042-7222166455","productId":"MYNTRA_100","timestamp":"2026-03-27T12:33:09.086Z","userId":7222166455}
+{"level":"warn","message":"Order Failed: ORD-1774614789042-7222166455","timestamp":"2026-03-27T12:33:13.041Z"}
+{"level":"info","message":"Order Created: ORD-1774614848384-7222166455","productId":"MYNTRA_100","timestamp":"2026-03-27T12:34:08.574Z","userId":7222166455}
+{"coupons":["123456"],"level":"info","message":"Coupons Delivered: ORD-1774614848384-7222166455","timestamp":"2026-03-27T12:34:31.495Z"}

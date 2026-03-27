@@ -17,17 +17,16 @@ async function handleStart(bot, msg, store, mainMenuKeyboard) {
     : `🎉 Hello, *${name}*! Welcome to *${config.SHOP_NAME}*!`;
 
   const welcomeText =
-    `${greeting}\n\n` +
-    `✨ *${config.TAGLINE}*\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n` +
-    `🔥 *What we offer:*\n` +
-    `👗 Myntra coupons — Up to ₹200 off\n` +
-    `📦 Amazon deals — ₹150 off Fresh & more\n` +
-    `🍔 Swiggy codes — ₹60 off your meals\n` +
-    `🍕 Zomato vouchers — ₹75 off orders\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `⚡ *Instant delivery after payment*\n\n` +
-    `Use the menu below to get started! ⬇️`;
+    `${greeting}
+
+🔥 *What we offer:*
+👗 Myntra coupons —
+• Flat ₹100 off
+• Flat ₹150 off
+
+⚡ *Instant delivery after payment*
+
+Use the menu below to get started! ⬇️`;
 
   await bot.sendMessage(chatId, welcomeText, {
     parse_mode: "Markdown",

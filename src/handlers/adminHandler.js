@@ -28,7 +28,8 @@ async function handleAdminApproval(bot, orderId, store, adminMessageId = null) {
     `🎉 *Payment Verified*\n\n` +
     `Your Coupon Code(s):\n\n` +
     `${couponsText}\n\n` +
-    `Thank you for using *Golu Offers*!`,
+    `Thank you for using *Coupon Store*!\n\n` +
+    `🤝 Please join https://t.me/earnxupdates for further updates`,
     { parse_mode: "Markdown" }
   );
 
@@ -49,7 +50,7 @@ async function handleAdminRejection(bot, orderId, reasonKey, store, adminMessage
   await store.markOrderFailed(orderId);
   const order = await Order.findOne({ orderId });
   const reasonText = REJECTION_REASONS[reasonKey] || "Payment verification failed.";
-  
+
   if (order) {
     await bot.sendMessage(
       order.userId,
@@ -81,7 +82,7 @@ async function handleAdminRejection(bot, orderId, reasonKey, store, adminMessage
 async function sendAdminMenu(bot, chatId, store, messageId = null) {
   const stats = await store.getAdminStats();
   const lowStock = await store.getLowStockProducts(5);
-  
+
   let menuText =
     `🛡️ *ADMIN DASHBOARD*\n\n` +
     `💰 *Total Revenue:* ₹${stats.totalRevenue.toLocaleString()}\n` +
@@ -131,7 +132,7 @@ async function listProductsForAdmin(bot, chatId, store, messageId = null) {
   const keyboard = products.map((p) => [
     { text: `${p.active ? "✅" : "❌"} ${p.emoji} ${p.name} (${p.pool.length})`, callback_data: `ADMIN_PROD:${p.id}` },
   ]);
-  
+
   keyboard.push([{ text: "⬅️ Back to Menu", callback_data: "ADMIN_MENU" }]);
 
   await editOrSendMessage(bot, chatId, messageId, text, {
@@ -146,7 +147,7 @@ async function listCouponsForProduct(bot, chatId, productId, store, messageId) {
 
   let text = `🔢 *Coupon Pool:* ${product.emoji} ${escapeMarkdown(product.name)}\n\n`;
   const keyboard = [];
-  
+
   if (product.pool.length === 0) {
     text += `❌ No coupons available in the pool.`;
   } else {
@@ -155,8 +156,8 @@ async function listCouponsForProduct(bot, chatId, productId, store, messageId) {
     for (let i = 0; i < product.pool.length; i += 2) {
       const row = [];
       row.push({ text: `❌ ${product.pool[i]}`, callback_data: `ADMIN_DEL_C:${productId}:${product.pool[i]}` });
-      if (product.pool[i+1]) {
-        row.push({ text: `❌ ${product.pool[i+1]}`, callback_data: `ADMIN_DEL_C:${productId}:${product.pool[i+1]}` });
+      if (product.pool[i + 1]) {
+        row.push({ text: `❌ ${product.pool[i + 1]}`, callback_data: `ADMIN_DEL_C:${productId}:${product.pool[i + 1]}` });
       }
       keyboard.push(row);
     }
@@ -239,7 +240,7 @@ async function handleAdminAction(bot, chatId, data, store, messageId = null) {
   if (data.startsWith("ADMIN_ORDERS:")) {
     const skip = parseInt(data.split(":")[1] || "0");
     const { orders, total } = await getOrdersPaginated(skip);
-    
+
     let text = `📜 *Recent Orders (${skip + 1}-${Math.min(skip + 10, total)} of ${total})*\n\n`;
     orders.forEach(o => {
       text += `• \`${o.orderId}\` | ${o.status.toUpperCase()} | ${o.utrNumber || 'No UTR'}\n`;

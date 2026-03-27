@@ -38,7 +38,7 @@ async function handleBuyProduct(bot, chatId, productId, store, formatPrice) {
 
     const fs = require('fs');
     const path = require('path');
-    
+
     // Path to the static QR code in the root folder
     const qrPath = path.join(__dirname, '..', '..', 'qr_code.jpeg');
 
@@ -46,9 +46,9 @@ async function handleBuyProduct(bot, chatId, productId, store, formatPrice) {
       `🛒 *Order Created*\n\n` +
       `📦 *Coupon:* ${product.name}\n` +
       `💰 *Amount:* ${formatPrice(product.price)}\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `🔖 *Order Number:* \`${order.orderId}\`\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+
+      `🔖 *Order Number:* \`${order.orderId}\`\n\n` +
+
       `💡 *Instructions:*\n` +
       `1. Scan the QR code above.\n` +
       `2. Pay the exact amount.\n` +

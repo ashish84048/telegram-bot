@@ -25,26 +25,7 @@ const logger = winston.createLogger({
 
 // Seed data remains the same
 const SEED_CATALOG = [
-  {
-    id: "MYNTRA_100",
-    name: "Myntra ₹100 Off Coupon",
-    description: "Flat ₹100 off",
-    price: 3000,
-    emoji: "👗",
-    category: "myntra",
-    categoryLabel: "👗 Myntra",
-    pool: ["MYNTRA2024A", "MYNTRA2024B", "MYNTRA2024C"],
-  },
-  {
-    id: "MYNTRA_150",
-    name: "Myntra ₹150 Off Coupon",
-    description: "Flat ₹150 off on orders above ₹499",
-    price: 4000,
-    emoji: "🛍️",
-    category: "myntra",
-    categoryLabel: "👗 Myntra",
-    pool: ["MYN200DEAL1", "MYN200DEAL2"],
-  },
+
 ];
 
 async function initCatalog() {
