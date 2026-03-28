@@ -30,10 +30,14 @@ async function handleBuyProduct(bot, chatId, productId, store, formatPrice) {
   }
 
   try {
+    // Set expiration time to 5 minutes from now
+    const expiryTime = new Date(Date.now() + 5 * 60 * 1000);
+
     const order = await store.createOrder({
       userId: chatId,
       productId: product.id,
       quantity: 1,
+      expiresAt: expiryTime // Pass expiry to the store/model
     });
 
     const fs = require('fs');
@@ -46,15 +50,15 @@ async function handleBuyProduct(bot, chatId, productId, store, formatPrice) {
       `🛒 *Order Created*\n\n` +
       `📦 *Coupon:* ${product.name}\n` +
       `💰 *Amount:* ${formatPrice(product.price)}\n\n` +
-
-      `🔖 *Order Number:* \`${order.orderId}\`\n\n` +
+      `🔖 *Order Number:* \`${order.orderId}\`\n` +
+      `⏳ *Expires In:* 5 minutes\n\n` +
 
       `💡 *Instructions:*\n` +
       `1. Scan the QR code above.\n` +
       `2. Pay the exact amount.\n` +
       `3. Copy the 12-digit **UTR Number** from your banking app.\n` +
       `4. Click the button below to submit your UTR.\n\n` +
-      `After payment click **Enter UTR Number**`;
+      `*Note:* If the UTR is not submitted within 5 minutes, this order will be automatically cancelled.`;
 
     // Create a readable stream for the local photo
     await bot.sendPhoto(chatId, fs.createReadStream(qrPath), {
@@ -67,6 +71,35 @@ async function handleBuyProduct(bot, chatId, productId, store, formatPrice) {
         ],
       },
     });
+
+    // Start auto-cancel timer (5 minutes)
+    setTimeout(async () => {
+      try {
+        const Order = require("../../models/Order");
+        const currentOrder = await Order.findOne({ orderId: order.orderId }).lean();
+        
+        // If order hasn't progressed from 'pending' (no UTR entered yet)
+        if (currentOrder && currentOrder.status === 'pending') {
+          // 1. Mark as failed
+          await store.markOrderFailed(order.orderId);
+          
+          // 2. Clear state if the user is still waiting to enter UTR
+          const userStates = require("../state");
+          if (userStates[chatId] && userStates[chatId].orderId === order.orderId) {
+             delete userStates[chatId];
+          }
+          
+          // 3. Notify the user
+          await bot.sendMessage(
+            chatId,
+            `⏳ *Order Expired*\n\nYour order \`${order.orderId}\` for *${product.name}* was automatically cancelled because no UTR was entered within 5 minutes.`,
+            { parse_mode: "Markdown" }
+          );
+        }
+      } catch (err) {
+        console.error("[AUTO CANCEL ERROR]", err.message);
+      }
+    }, 5 * 60 * 1000);
   } catch (err) {
     console.error("[BUY ERROR]", err.message || err);
     throw err;
