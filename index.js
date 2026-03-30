@@ -287,17 +287,28 @@ app.post("/api/orders/:orderId/deliver", requireAuth, async (req, res) => {
 });
 
 // STARTUP
-if (!isProduction) {
-  const PORT = process.env.PORT || 3000;
-  (async () => {
-    try {
-      await db.connect();
-      await store.initCatalog();
-      app.listen(PORT, () => console.log(`🚀 All-in-one server running on port ${PORT}`));
-    } catch (err) {
-      console.error("Startup failed:", err);
+const PORT = process.env.PORT || 3000;
+
+(async () => {
+  try {
+    await db.connect();
+    await store.initCatalog();
+
+    // Railway/Render/Local need a listening server.
+    // Vercel handles the serverless invocation automatically via exports.
+    const isVercel = process.env.VERCEL === "1" || !!process.env.NOW_REGION;
+    
+    if (!isVercel) {
+      app.listen(PORT, () => {
+        console.log(`🚀 All-in-one server running on port ${PORT}`);
+        if (!isProduction) {
+          console.log(`🤖 Local Polling: ACTIVE`);
+        }
+      });
     }
-  })();
-}
+  } catch (err) {
+    console.error("Startup failed:", err);
+  }
+})();
 
 module.exports = app;

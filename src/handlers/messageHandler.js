@@ -163,16 +163,16 @@ async function handleMessage(bot, msg, store, utils, components) {
 
   switch (text) {
     case "🛒 Browse Coupons":
-      return utils.safeExec(bot, chatId, () => components.catalog.sendCategoryMenu(bot, chatId, store));
+      return utils.safeExec(bot, chatId, () => components.catalog.sendCategoryMenu(bot, chatId, store, utils, components));
 
     case "📦 My Orders":
-      return utils.safeExec(bot, chatId, () => components.orders.sendMyOrders(bot, chatId, store, utils.formatPrice, utils.statusBadge));
+      return utils.safeExec(bot, chatId, () => components.orders.sendMyOrders(bot, chatId, store, utils, components));
 
     case "💬 Support":
       return utils.safeExec(bot, chatId, () => sendSupport(bot, chatId, utils.mainMenuKeyboard));
 
     case "❓ Help":
-      return utils.safeExec(bot, chatId, () => components.start.handleHelp(bot, chatId, utils.mainMenuKeyboard));
+      return utils.safeExec(bot, chatId, () => components.start.handleHelp(bot, chatId, store, utils, components));
 
     default:
       return bot.sendMessage(

@@ -1,8 +1,11 @@
 /**
- * My Orders
+ * My Orders component
  */
-async function sendMyOrders(bot, chatId, store, mainMenuKeyboard, formatPrice, statusBadge) {
+async function sendMyOrders(bot, chatId, store, utils, components) {
   const userOrders = await store.getUserOrders(chatId);
+
+  // Standardize accessing utility functions
+  const { mainMenuKeyboard, formatPrice, statusBadge } = utils;
 
   if (!userOrders.length) {
     return bot.sendMessage(
@@ -16,6 +19,7 @@ async function sendMyOrders(bot, chatId, store, mainMenuKeyboard, formatPrice, s
 
   const lines = [`📦 *Your Orders* (${userOrders.length} total)\n`];
 
+  // Show latest 5 orders
   const displayOrders = userOrders.slice(0, 5);
   for (let i = 0; i < displayOrders.length; i++) {
     const order = displayOrders[i];

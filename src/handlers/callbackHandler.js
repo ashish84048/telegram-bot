@@ -18,14 +18,14 @@ async function handleCallback(bot, query, store, utils, components) {
   if (data.startsWith("QTY_SELECT:") || data.startsWith("QTY_CUSTOM:")) {
     const productId = data.split(":")[1];
     return utils.safeExec(bot, chatId, () =>
-      components.payments.handleBuyProduct(bot, chatId, productId, store, utils.formatPrice)
+      components.payments.handleBuyProduct(bot, chatId, productId, store, utils, components)
     );
   }
 
   if (data.startsWith("CAT:")) {
     const categoryKey = data.split(":")[1];
     return utils.safeExec(bot, chatId, () =>
-      components.catalog.sendProductList(bot, chatId, categoryKey, store, utils.formatPrice, messageId)
+      components.catalog.sendProductList(bot, chatId, categoryKey, store, utils, components, messageId)
     );
   }
 
@@ -33,12 +33,12 @@ async function handleCallback(bot, query, store, utils, components) {
   if (data.startsWith("BUY:")) {
     const productId = data.split(":")[1];
     return utils.safeExec(bot, chatId, () =>
-      components.payments.handleBuyProduct(bot, chatId, productId, store, utils.formatPrice)
+      components.payments.handleBuyProduct(bot, chatId, productId, store, utils, components)
     );
   }
 
   if (data === "BACK_CATALOG") {
-    return utils.safeExec(bot, chatId, () => components.catalog.sendCategoryMenu(bot, chatId, store, messageId));
+    return utils.safeExec(bot, chatId, () => components.catalog.sendCategoryMenu(bot, chatId, store, utils, components, messageId));
   }
 
   // --- MANUAL VERIFICATION HANDLERS ---

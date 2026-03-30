@@ -3,7 +3,7 @@ const { escapeMarkdown } = require("../utils/helpers");
 /**
  * Category Menu
  */
-async function sendCategoryMenu(bot, chatId, store, editMessageId = null) {
+async function sendCategoryMenu(bot, chatId, store, utils, components, editMessageId = null) {
   const catalog = await store.getCatalog();
 
   const buttons = Object.entries(catalog).map(([key, cat]) => [
@@ -36,9 +36,11 @@ async function sendCategoryMenu(bot, chatId, store, editMessageId = null) {
 /**
  * Product List
  */
-async function sendProductList(bot, chatId, categoryKey, store, formatPrice, editMessageId = null) {
+async function sendProductList(bot, chatId, categoryKey, store, utils, components, editMessageId = null) {
   const catalog = await store.getCatalog();
   const category = catalog[categoryKey];
+
+  const { formatPrice } = utils;
 
   if (!category) {
     return bot.sendMessage(chatId, "❌ Category not found.");
