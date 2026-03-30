@@ -1,10 +1,20 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const rateLimit = require("express-rate-limit");
+const winston = require("winston");
 const db = require("./db");
 const store = require("./store");
 const config = require("./config");
 
-// UTILS
+// MODELS (Required for stats/admin routes)
+const Product = require("./models/Product");
+const Order = require("./models/Order");
+const User = require("./models/User");
+
+// UTILS & HELPERS
 const formatters = require("./src/utils/formatters");
 const keyboards = require("./src/utils/keyboards");
 const helpers = require("./src/utils/helpers");
@@ -20,13 +30,43 @@ const messageHandler = require("./src/handlers/messageHandler");
 const callbackHandler = require("./src/handlers/callbackHandler");
 const adminHandler = require("./src/handlers/adminHandler");
 
-// ╔══════════════════════════════════════════════════════╗
-// ║          🏪 GOLU OFFERS — TELEGRAM BOT              ║
-// ╚══════════════════════════════════════════════════════╝
+/**
+ * ╔══════════════════════════════════════════════════════╗
+ * ║           🚀 GOLU OFFERS — ALL-IN-ONE SERVER         ║
+ * ║           Bot + Dashboard + Webhook + API            ║
+ * ╚══════════════════════════════════════════════════════╝
+ */
 
-const bot = new TelegramBot(config.BOT_TOKEN, { polling: true });
+// --- LOGGING CONFIGURATION ---
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'combined.log' }),
+  ],
+});
 
-// Injection containers for easier passing
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({ format: winston.format.simple() }));
+}
+
+// --- BOT INITIALIZATION ---
+const isProduction = process.env.NODE_ENV === 'production';
+const bot = new TelegramBot(config.BOT_TOKEN, { 
+  polling: !isProduction 
+});
+
+if (!isProduction) {
+  console.log("🤖 Bot is running in LOCAL POLLING mode");
+}
+
+const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || "golu-admin-secret-2024";
+
+// Injection containers for handlers
 const utils = {
   ...formatters,
   ...keyboards,
@@ -41,10 +81,30 @@ const components = {
   admin: adminHandler,
 };
 
-// ─────────────────────────────────────────────────────────
-// STATE & MAINTENANCE OVERRIDES
-// ─────────────────────────────────────────────────────────
+// --- BOT HANDLERS ---
+
+bot.onText(/\/start/, (msg) => {
+  startHandler.handleStart(bot, msg, store, utils, components);
+});
+
+bot.onText(/\/help/, (msg) => {
+  startHandler.handleHelp(bot, msg.chat.id, store, utils, components);
+});
+
 let isBotOnline = true;
+bot.onText(/\/offline/, (msg) => {
+  if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
+    isBotOnline = false;
+    bot.sendMessage(msg.chat.id, "📴 Bot is now OFFLINE. Users will see maintenance mode.");
+  }
+});
+
+bot.onText(/\/online/, (msg) => {
+  if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
+    isBotOnline = true;
+    bot.sendMessage(msg.chat.id, "🔛 Bot is now ONLINE. Users can use the bot normally.");
+  }
+});
 
 const checkMaintenance = (chatId) => {
   if (isBotOnline || String(chatId) === String(config.ADMIN_CHAT_ID)) return true;
@@ -52,153 +112,192 @@ const checkMaintenance = (chatId) => {
   return false;
 };
 
-// ─────────────────────────────────────────────────────────
-// HANDLER REGISTRATION
-// ─────────────────────────────────────────────────────────
-
-// Commands
-bot.onText(/\/start/, (msg) => {
-  if (!checkMaintenance(msg.chat.id)) return;
-  startHandler.handleStart(bot, msg, store, keyboards.mainMenuKeyboard);
-});
-
-bot.onText(/\/help/, (msg) => {
-  if (!checkMaintenance(msg.chat.id)) return;
-  startHandler.handleHelp(bot, msg.chat.id, store, keyboards.mainMenuKeyboard);
-});
-
-bot.onText(/\/myid/, (msg) => {
-  if (!checkMaintenance(msg.chat.id)) return;
-  startHandler.handleMyId(bot, msg.chat.id);
-});
-
-bot.onText(/\/admin/, (msg) => {
-  if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
-    return adminHandler.sendAdminMenu(bot, msg.chat.id, store);
-  }
-  bot.sendMessage(msg.chat.id, "⛔ *Unauthorized:* This command is for admins only.", { parse_mode: "Markdown" });
-});
-
-bot.onText(/\/offline/, (msg) => {
-  if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
-    isBotOnline = false;
-    bot.sendMessage(msg.chat.id, "🔴 Bot is now OFFLINE. Users will see maintenance mode.");
-  }
-});
-
-bot.onText(/\/online/, (msg) => {
-  if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
-    isBotOnline = true;
-    bot.sendMessage(msg.chat.id, "🟢 Bot is now ONLINE. Users can use the bot normally.");
-  }
-});
-
-// Main Message Router
 bot.on("message", async (msg) => {
   try {
-    if (!msg.text || msg.text.startsWith("/")) return; // Handled by onText
+    if (!msg.text || msg.text.startsWith("/")) return; 
     if (!checkMaintenance(msg.chat.id)) return;
-
     await messageHandler.handleMessage(bot, msg, store, utils, components);
   } catch (err) {
-    console.error("[MESSAGE ERROR]", err.message || err);
+    logger.error("[MESSAGE ERROR]", { message: err.message });
   }
 });
 
-// Callback Query Router
 bot.on("callback_query", async (query) => {
   try {
-    if (!isBotOnline && String(query.message.chat.id) !== String(config.ADMIN_CHAT_ID)) {
+    const chatId = query.message?.chat?.id;
+    if (!isBotOnline && String(chatId) !== String(config.ADMIN_CHAT_ID)) {
       return bot.answerCallbackQuery(query.id, { text: "🛠️ Bot is currently offline for maintenance.", show_alert: true });
     }
     await callbackHandler.handleCallback(bot, query, store, utils, components);
   } catch (err) {
-    console.error("[CALLBACK ERROR]", err.message || err);
+    logger.error("[CALLBACK ERROR]", { message: err.message });
   }
 });
 
-// ─────────────────────────────────────────────────────────
-// ERROR HANDLING
-// ─────────────────────────────────────────────────────────
+bot.on("error", (err) => logger.error("[BOT ERROR]", { message: err.message }));
 
-bot.on("polling_error", (err) => {
-  console.error("[POLLING ERROR]", err.code, err.message);
-});
-
-bot.on("error", (err) => {
-  console.error("[BOT ERROR]", err.message);
-});
-
-// ─────────────────────────────────────────────────────────
-// RENDER KEEP-ALIVE (EXPRESS SERVER + HEARTBEAT)
-// ─────────────────────────────────────────────────────────
-const express = require("express");
-const https = require("https");
-const http = require("http");
-
+// --- EXPRESS SERVER ---
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+// API Rate Limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." }
+});
+
+app.use(cors());
+app.use(express.json());
+
+// Serve static dashboard files
+app.use(express.static(path.join(__dirname, "public")));
+
+// DB Middleware
+app.use(async (req, res, next) => {
+  try {
+    await db.connect();
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Database connection failed" });
+  }
+});
+
+// --- DASHBOARD AUTH MIDDLEWARE ---
+function requireAuth(req, res, next) {
+  const authHeader = req.headers["authorization"] || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (!token || token !== DASHBOARD_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+}
+
+// --- API ROUTES ---
+
+app.post("/api/webhook", async (req, res) => {
+  try {
+    bot.processUpdate(req.body);
+    res.status(200).send("OK");
+  } catch (err) {
+    res.status(500).send("Error");
+  }
+});
 
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
+    bot: isBotOnline ? "online" : "offline",
+    mode: isProduction ? "webhook" : "polling",
+    timestamp: new Date().toISOString()
   });
 });
 
-function startHeartbeat() {
-  const externalUrl = process.env.RENDER_EXTERNAL_URL;
-  const serviceName = process.env.RENDER_SERVICE_NAME;
+// DASHBOARD STATS
+app.get("/api/stats", requireAuth, async (req, res) => {
+  try {
+    const [totalOrders, pendingOrders, deliveredOrders, failedOrders, totalUsers, products] = await Promise.all([
+      Order.countDocuments(),
+      Order.countDocuments({ status: "pending" }),
+      Order.countDocuments({ status: "delivered" }),
+      Order.countDocuments({ status: "failed" }),
+      User.countDocuments(),
+      Product.find({ active: true }).lean(),
+    ]);
 
-  // Determine URL to ping
-  let urlToPing;
-  if (externalUrl) {
-    urlToPing = externalUrl;
-  } else if (serviceName) {
-    urlToPing = `https://${serviceName}.onrender.com`;
-  } else {
-    urlToPing = `http://localhost:${PORT}`;
-  }
+    const revenueAgg = await Order.aggregate([
+      { $match: { status: "delivered" } },
+      { $group: { _id: null, total: { $sum: "$totalPrice" } } },
+    ]);
 
-  // Ensure it has /health route
-  if (!urlToPing.endsWith("/health")) {
-    urlToPing = `${urlToPing}/health`;
-  }
+    const totalRevenuePaise = revenueAgg[0]?.total || 0;
+    const totalStock = products.reduce((sum, p) => sum + p.pool.length, 0);
 
-  const protocol = urlToPing.startsWith("https") ? https : http;
-
-  console.log(`[HEARTBEAT] ❤️ Auto-ping started targeting: ${urlToPing} every 4 minutes`);
-
-  // Ping every 4 minutes (240,000 ms)
-  setInterval(() => {
-    protocol.get(urlToPing, (res) => {
-      if (res.statusCode === 200) {
-        console.log(`[HEARTBEAT] ✅ Keep-alive ping successful at ${new Date().toISOString()}`);
-      } else {
-        console.log(`[HEARTBEAT] ⚠️ Ping returned status code: ${res.statusCode}`);
-      }
-    }).on("error", (err) => {
-      console.error(`[HEARTBEAT] ❌ Ping failed: ${err.message}`);
+    res.json({
+      totalOrders, pendingOrders, deliveredOrders, failedOrders,
+      totalUsers, totalStock, totalRevenue: totalRevenuePaise / 100,
     });
-  }, 780000);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/products", requireAuth, async (req, res) => {
+  try {
+    const products = await Product.find().lean();
+    res.json(products.map(p => ({ ...p, stock: p.pool.length, pool: undefined })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/products", requireAuth, async (req, res) => {
+  try {
+    const product = await Product.create({ ...req.body, pool: [] });
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/products/:id/coupons", requireAuth, async (req, res) => {
+  try {
+    const product = await store.addCouponsToPool(req.params.id, req.body.coupons);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    res.json({ message: "Added coupons", stock: product.pool.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/orders", requireAuth, async (req, res) => {
+  try {
+    const { status, limit = 50, skip = 0 } = req.query;
+    const filter = status ? { status } : {};
+    const [orders, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip(Number(skip)).limit(Number(limit)).lean(),
+      Order.countDocuments(filter),
+    ]);
+    res.json({ total, orders });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/orders/:orderId/deliver", requireAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    await store.markOrderPaid(orderId);
+    const result = await store.deliverCoupons(orderId);
+
+    if (result.outOfStock) return res.status(400).json({ error: "Out of stock" });
+
+    const order = await Order.findOne({ orderId }).lean();
+    if (order && order.coupons?.length > 0) {
+      const product = await store.getProduct(order.productId);
+      const couponsText = order.coupons.map(c => `\`${c}\``).join("\n");
+      await bot.sendMessage(order.userId, `🎁 *Payment Confirmed*\n\nYour coupons for *${product ? product.name : order.productId}*:\n\n${couponsText}\n\nOrder ID: \`${orderId}\``, { parse_mode: "Markdown" })
+        .catch(e => logger.error(`Bot notify failed: ${e.message}`));
+    }
+    res.json({ success: true, coupons: result.coupons });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// STARTUP
+if (!isProduction) {
+  const PORT = process.env.PORT || 3000;
+  (async () => {
+    try {
+      await db.connect();
+      await store.initCatalog();
+      app.listen(PORT, () => console.log(`🚀 All-in-one server running on port ${PORT}`));
+    } catch (err) {
+      console.error("Startup failed:", err);
+    }
+  })();
 }
 
-// ─────────────────────────────────────────────────────────
-// STARTUP
-// ─────────────────────────────────────────────────────────
-
-(async () => {
-  await db.connect();
-  await store.initCatalog();
-
-  // Start Express server for keep-alive
-  app.listen(PORT, () => {
-    console.log(`[SERVER] 🟢 Express server running on port ${PORT}`);
-    startHeartbeat();
-  });
-
-  console.log(`\n╔══════════════════════════════════╗`);
-  console.log(`║  ${config.SHOP_NAME} Bot is LIVE! 🚀   ║`);
-  console.log(`╚══════════════════════════════════╝\n`);
-})();
+module.exports = app;

@@ -139,3 +139,5 @@
 {"level":"warn","message":"Order Failed: ORD-1774614789042-7222166455","timestamp":"2026-03-27T12:33:13.041Z"}
 {"level":"info","message":"Order Created: ORD-1774614848384-7222166455","productId":"MYNTRA_100","timestamp":"2026-03-27T12:34:08.574Z","userId":7222166455}
 {"coupons":["123456"],"level":"info","message":"Coupons Delivered: ORD-1774614848384-7222166455","timestamp":"2026-03-27T12:34:31.495Z"}
+{"level":"info","message":"Order Created: ORD-1774872056399-2071459610","productId":"MYNTRA_100","timestamp":"2026-03-30T12:00:56.463Z","userId":2071459610}
+{"level":"info","message":"Order Created: ORD-1774872072727-6476290915","productId":"MYNTRA_150","timestamp":"2026-03-30T12:01:12.803Z","userId":6476290915}

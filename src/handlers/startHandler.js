@@ -4,7 +4,7 @@ const { escapeMarkdown } = require("../utils/helpers");
 /**
  * /start handler
  */
-async function handleStart(bot, msg, store, mainMenuKeyboard) {
+async function handleStart(bot, msg, store, utils, components) {
   const chatId = msg.chat.id;
   await store.upsertUser(msg);
 
@@ -30,14 +30,14 @@ Use the menu below to get started! ⬇️`;
 
   await bot.sendMessage(chatId, welcomeText, {
     parse_mode: "Markdown",
-    ...mainMenuKeyboard(),
+    ...utils.mainMenuKeyboard(),
   });
 }
 
 /**
  * /help handler
  */
-async function handleHelp(bot, chatId, store, mainMenuKeyboard) {
+async function handleHelp(bot, chatId, store, utils, components) {
   const helpText =
     `❓ *How ${config.SHOP_NAME} Works*\n\n` +
     `*Step 1 —* Tap 🛒 *Browse Coupons*\n` +
@@ -52,7 +52,7 @@ async function handleHelp(bot, chatId, store, mainMenuKeyboard) {
 
   await bot.sendMessage(chatId, helpText, {
     parse_mode: "Markdown",
-    ...mainMenuKeyboard(),
+    ...utils.mainMenuKeyboard(),
   });
 }
 

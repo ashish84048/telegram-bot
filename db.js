@@ -5,6 +5,12 @@
  */
 
 const mongoose = require("mongoose");
+const dns = require("dns");
+
+// Force usage of Google's DNS servers locally to resolve SRV record issues
+if (process.env.NODE_ENV !== "production") {
+  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+}
 
 let isConnected = false;
 

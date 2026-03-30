@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"node index.js\" \"node server.js\"",
+    "start": "node index.js",
     "bot": "node index.js",
-    "server": "node server.js",
-    "dev": "concurrently \"node index.js\" \"node server.js\"",
+    "server": "node index.js",
+    "dev": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
