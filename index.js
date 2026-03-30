@@ -5,6 +5,10 @@ const cors = require("cors");
 const path = require("path");
 const rateLimit = require("express-rate-limit");
 const winston = require("winston");
+const https = require("https"); // Native module for heartbeat
+const http = require("http");
+const mongoose = require("mongoose");
+
 const db = require("./db");
 const store = require("./store");
 const config = require("./config");
@@ -56,11 +60,19 @@ if (process.env.NODE_ENV !== 'production') {
 
 // --- BOT INITIALIZATION ---
 const isProduction = process.env.NODE_ENV === 'production';
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+
 const bot = new TelegramBot(config.BOT_TOKEN, { 
   polling: !isProduction 
 });
 
-if (!isProduction) {
+// Automate Webhook setup in Production
+if (isProduction && RENDER_URL) {
+  const webhookUrl = `${RENDER_URL.endsWith('/') ? RENDER_URL.slice(0, -1) : RENDER_URL}/api/webhook`;
+  bot.setWebHook(webhookUrl)
+    .then(() => console.log(`🚀 Bot Webhook set to: ${webhookUrl}`))
+    .catch(err => console.error(`❌ Webhook setup failed: ${err.message}`));
+} else if (!isProduction) {
   console.log("🤖 Bot is running in LOCAL POLLING mode");
 }
 
@@ -286,6 +298,35 @@ app.post("/api/orders/:orderId/deliver", requireAuth, async (req, res) => {
   }
 });
 
+// --- SELF-PING HEARTBEAT (To avoid Render's free tier spin-down) ---
+function startHeartbeat() {
+  let url = process.env.RENDER_EXTERNAL_URL;
+  if (!url) {
+    console.warn("⚠️ RENDER_EXTERNAL_URL not set. Heartbeat disabled.");
+    return;
+  }
+
+  // Ensure URL starts with http/https
+  if (!url.startsWith("http")) {
+    url = `https://${url}`;
+  }
+
+
+  // Ping every 10 minutes (600,000 ms)
+  // Render's free tier spins down after 15 minutes of inactivity.
+  setInterval(() => {
+    const protocol = url.startsWith("https") ? https : http;
+    protocol.get(`${url}/health`, (res) => {
+      console.log(`💓 Heartbeat: [${new Date().toISOString()}] - Status: ${res.statusCode}`);
+    }).on("error", (err) => {
+      console.error(`💔 Heartbeat Failed: ${err.message}`);
+    });
+  }, 10 * 60 * 1000);
+
+  console.log("🚀 Heartbeat service started.");
+}
+
+
 // STARTUP
 const PORT = process.env.PORT || 3000;
 
@@ -294,20 +335,27 @@ const PORT = process.env.PORT || 3000;
     await db.connect();
     await store.initCatalog();
 
-    // Railway/Render/Local need a listening server.
-    // Vercel handles the serverless invocation automatically via exports.
-    const isVercel = process.env.VERCEL === "1" || !!process.env.NOW_REGION;
-    
-    if (!isVercel) {
-      app.listen(PORT, () => {
-        console.log(`🚀 All-in-one server running on port ${PORT}`);
-        if (!isProduction) {
-          console.log(`🤖 Local Polling: ACTIVE`);
-        }
+    const server = app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 All-in-one server running on port ${PORT}`);
+      if (isProduction) {
+        startHeartbeat();
+      }
+    });
+
+    // Graceful shutdown
+    process.on("SIGTERM", () => {
+      console.log("SIGTERM signal received: closing HTTP server");
+      server.close(() => {
+        console.log("HTTP server closed");
+        mongoose.connection.close(false, () => {
+          console.log("MongoDB connection closed");
+          process.exit(0);
+        });
       });
-    }
+    });
   } catch (err) {
     console.error("Startup failed:", err);
+    process.exit(1);
   }
 })();
 

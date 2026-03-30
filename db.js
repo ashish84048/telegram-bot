@@ -18,17 +18,29 @@ async function connect() {
   if (isConnected) return;
 
   const uri = process.env.MONGODB_URI;
-  if (!uri) throw new Error("MONGODB_URI is not set in environment variables");
+  if (!uri) {
+    console.error("❌ MONGODB_URI is not set in environment variables");
+    process.exit(1);
+  }
 
   try {
+    // Optimized connection options for cloud deployment
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 15000, // 15 seconds
+      heartbeatFrequencyMS: 10000,    // 10 seconds
+      socketTimeoutMS: 45000,         // 45 seconds
     });
+
     isConnected = true;
     console.log("✅ MongoDB connected successfully");
 
+    mongoose.connection.on("error", (err) => {
+      console.error("❌ MongoDB error:", err.message);
+      isConnected = false;
+    });
+
     mongoose.connection.on("disconnected", () => {
-      console.warn("⚠️  MongoDB disconnected");
+      console.warn("⚠️  MongoDB disconnected. Attempting to reconnect...");
       isConnected = false;
     });
 
@@ -38,8 +50,10 @@ async function connect() {
     });
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
+    // On Render, we want to fail fast so the service can restart
     process.exit(1);
   }
 }
+
 
 module.exports = { connect };
