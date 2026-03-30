@@ -103,6 +103,18 @@ bot.onText(/\/help/, (msg) => {
   startHandler.handleHelp(bot, msg.chat.id, store, utils, components);
 });
 
+bot.onText(/\/admin/, (msg) => {
+  if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
+    adminHandler.sendAdminMenu(bot, msg.chat.id, store);
+  }
+});
+
+bot.onText(/\/stats/, (msg) => {
+  if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
+    adminHandler.showStats(bot, msg.chat.id, store);
+  }
+});
+
 let isBotOnline = true;
 bot.onText(/\/offline/, (msg) => {
   if (String(msg.chat.id) === String(config.ADMIN_CHAT_ID)) {
